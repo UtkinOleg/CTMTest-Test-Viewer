@@ -1,0 +1,27 @@
+unit PrnDlg;
+
+interface
+
+uses
+  Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
+  QuickRpt, ExtCtrls, Qrctrls;
+
+type
+  TPrnForm = class(TForm)
+    QR: TQuickRep;
+    QRS: TQRStringsBand;
+    QRExpr1: TQRExpr;
+  private
+    { Private declarations }
+  public
+    { Public declarations }
+  end;
+
+var
+  PrnForm: TPrnForm;
+
+implementation
+
+{$R *.DFM}
+
+end.

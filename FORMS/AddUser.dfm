@@ -1,0 +1,136 @@
+object AddUserForm: TAddUserForm
+  Left = 243
+  Top = 296
+  BorderStyle = bsDialog
+  Caption = 'Добавить пользователя'
+  ClientHeight = 178
+  ClientWidth = 688
+  Color = clBtnFace
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -11
+  Font.Name = 'MS Sans Serif'
+  Font.Style = []
+  OldCreateOrder = False
+  Position = poMainFormCenter
+  PixelsPerInch = 96
+  TextHeight = 13
+  object btnOK: TButton
+    Left = 448
+    Top = 149
+    Width = 73
+    Height = 25
+    Caption = 'OK'
+    ModalResult = 1
+    TabOrder = 0
+  end
+  object btnCancel: TButton
+    Left = 528
+    Top = 149
+    Width = 73
+    Height = 25
+    Cancel = True
+    Caption = 'Отмена'
+    ModalResult = 2
+    TabOrder = 1
+  end
+  object Button1: TButton
+    Left = 608
+    Top = 149
+    Width = 73
+    Height = 25
+    Caption = 'Помощь'
+    TabOrder = 2
+  end
+  object Panel1: TPanel
+    Left = 8
+    Top = 8
+    Width = 673
+    Height = 137
+    BevelInner = bvRaised
+    BevelOuter = bvLowered
+    TabOrder = 3
+    object Label1: TLabel
+      Left = 8
+      Top = 6
+      Width = 133
+      Height = 13
+      Caption = 'Фамилия, Имя, Отчество:'
+    end
+    object Label2: TLabel
+      Left = 8
+      Top = 48
+      Width = 83
+      Height = 13
+      Caption = 'Справочник №1:'
+    end
+    object Label3: TLabel
+      Left = 8
+      Top = 88
+      Width = 83
+      Height = 13
+      Caption = 'Справочник №2:'
+    end
+    object Button5: TToolbarButton97
+      Left = 640
+      Top = 64
+      Width = 23
+      Height = 20
+      Hint = 'Очистка поля "Фамилия, Имя, Отчество"'
+      Caption = 'X'
+      ParentShowHint = False
+      ShowHint = True
+      OnClick = Button5Click
+    end
+    object ToolbarButton971: TToolbarButton97
+      Left = 640
+      Top = 104
+      Width = 23
+      Height = 20
+      Hint = 'Очистка поля "Фамилия, Имя, Отчество"'
+      Caption = 'X'
+      ParentShowHint = False
+      ShowHint = True
+      OnClick = ToolbarButton971Click
+    end
+    object FIOEdit: TEdit
+      Left = 8
+      Top = 20
+      Width = 657
+      Height = 21
+      TabOrder = 0
+    end
+    object Spr1Edit: TComboEdit
+      Left = 8
+      Top = 64
+      Width = 633
+      Height = 21
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clWindowText
+      Font.Height = -13
+      Font.Name = 'MS Sans Serif'
+      Font.Style = []
+      GlyphKind = gkEllipsis
+      HideSelection = False
+      NumGlyphs = 1
+      ParentFont = False
+      TabOrder = 1
+    end
+    object Spr2Edit: TComboEdit
+      Left = 8
+      Top = 104
+      Width = 633
+      Height = 21
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clWindowText
+      Font.Height = -13
+      Font.Name = 'MS Sans Serif'
+      Font.Style = []
+      GlyphKind = gkEllipsis
+      HideSelection = False
+      NumGlyphs = 1
+      ParentFont = False
+      TabOrder = 2
+    end
+  end
+end

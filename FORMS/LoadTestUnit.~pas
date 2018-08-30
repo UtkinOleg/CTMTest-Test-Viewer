@@ -1,0 +1,337 @@
+unit LoadTestUnit;
+
+interface
+
+uses
+  Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
+  ImgList, StdCtrls, ExtCtrls, ComCtrls, Menus, Main, Buttons, mdCONTROLS,
+  ComTypes, ComProc, ToolWin, XPMenu;
+
+type
+  TLoadTestForm = class(TForm)
+    tv: TTreeView;
+    Panel1: TPanel;
+    Button2: TButton;
+    ImageList1: TImageList;
+    PopupMenu1: TPopupMenu;
+    N1: TMenuItem;
+    BitBtn1: TButton;
+    Panel2: TTabControl;
+    XPGroupBox2: TXPGroupBox;
+    Label1: TLabel;
+    Label4: TLabel;
+    Label9: TLabel;
+    Label5: TLabel;
+    Label10: TLabel;
+    XPGroupBox1: TXPGroupBox;
+    Label2: TLabel;
+    Label3: TLabel;
+    Label6: TLabel;
+    lv: TXPListView;
+    Panel3: TPanel;
+    Splitter1: TSplitter;
+    ImageList2: TImageList;
+    Panel4: TPanel;
+    CoolBar1: TCoolBar;
+    ToolBar1: TToolBar;
+    ToolButton1: TToolButton;
+    ToolButton2: TToolButton;
+    ToolButton3: TToolButton;
+    XPMenu1: TXPMenu;
+    procedure tvDblClick(Sender: TObject);
+    procedure FormShow(Sender: TObject);
+    procedure tvChange(Sender: TObject; Node: TTreeNode);
+    procedure N1Click(Sender: TObject);
+    procedure BitBtn1Click(Sender: TObject);
+    procedure tvKeyUp(Sender: TObject; var Key: Word; Shift: TShiftState);
+    procedure tvCollapsed(Sender: TObject; Node: TTreeNode);
+    procedure tvExpanded(Sender: TObject; Node: TTreeNode);
+    procedure tvCollapsing(Sender: TObject; Node: TTreeNode;
+      var AllowCollapse: Boolean);
+    procedure tvExpanding(Sender: TObject; Node: TTreeNode;
+      var AllowExpansion: Boolean);
+    procedure ToolButton1Click(Sender: TObject);
+    procedure ToolButton3Click(Sender: TObject);
+    procedure FormActivate(Sender: TObject);
+  private
+    { Private declarations }
+    savetree : boolean;
+  public
+    { Public declarations }
+    procedure WriteParams;
+    procedure ReadParams;
+    procedure TreeSaveToFile(fn : string);
+    procedure TreeLoadFromFile(fn : string);
+  end;
+
+var
+  LoadTestForm: TLoadTestForm;
+
+implementation
+
+{$R *.DFM}
+
+procedure TLoadTestForm.tvDblClick(Sender: TObject);
+begin
+ if BitBtn1.Enabled then BitBtn1Click(Sender);
+end;
+
+procedure TLoadTestForm.FormShow(Sender: TObject);
+begin
+ BitBtn1.Enabled := False;
+ Panel2.Visible := false;
+ savetree := false;
+ LoadTestForm.tv.FullCollapse;
+ TreeLoadFromFile(ExtractFilePath(paramstr(0))+'tree.cfg');
+ savetree := true;
+ if tv.Items.Count > 0 then
+  tv.Selected := tv.Items[0];
+end;
+
+procedure TLoadTestForm.tvChange(Sender: TObject; Node: TTreeNode);
+var
+ gstr : TStringList;
+ gstr2 : TStringList;
+ LI : TListItem;
+ i : integer;
+begin
+ if tv.Selected <> nil then
+  if (tv.Selected.ImageIndex <> 0) and (tv.Selected.ImageIndex <> 2) then
+  begin
+   BitBtn1.Enabled := tv.Selected.ImageIndex <> 3;
+   try
+    LP := tv.Selected.Data;
+    Label2.Caption := StrPas(LP^.NameBuffer);
+    Label9.Caption := IntToStr(LP^.TestTime);
+    if LP^.QuestionsCount>0 then
+      Label6.Caption := IntToStr(LP^.QuestionsCount)
+    else
+      Label6.Caption := '';
+    Label10.Caption := IntToStr(LP^.TestSize);
+    case LP^.TestType of
+     0 :  Label1.Caption :=  'Зачетный тест';
+     1 :  Label1.Caption :=  'Проверочный тест';
+     2 :  Label1.Caption :=  'Обучение';
+    end;
+    if LP^.Enabled=1 then
+     Label1.Caption :=  'Период тестирования закончился';
+    lv.Items.Clear;
+    if length(LP^.Groups)>0 then
+    begin
+     gstr := TStringList.Create;
+     gstr.Text := LP^.Groups;
+     gstr2 := TStringList.Create;
+     gstr2.Text := LP^.Groups2;
+     for i:=0 to gstr.Count-1 do
+     begin
+      LI := lv.Items.Add;
+      LI.Caption := gstr[i];
+      LI.Subitems.Add(gstr2[i]);
+     end;
+     gstr.free;
+     gstr2.free;
+    end;
+   except
+   end;
+   Panel2.Visible := true;
+  end
+  else
+  begin
+   BitBtn1.Enabled := False;
+   Panel2.Visible := false;
+  end;
+end;
+
+procedure TLoadTestForm.N1Click(Sender: TObject);
+var
+ TestName : string;
+ buffer : PChar;
+ F : TFileStream;
+ len : integer;
+ ListItem : TListItem;
+begin
+ if tv.Selected <> nil then
+  if tv.Selected.ImageIndex = 1 then
+      try
+        LP := tv.Selected.Data;
+        if fileexists(ExtractFilePath(paramstr(0))+'RemoteDesktop.dat') then
+           F := TFileStream.Create(ExtractFilePath(paramstr(0))+'RemoteDesktop.dat',fmOpenWrite)
+         else
+           F := TFileStream.Create(ExtractFilePath(paramstr(0))+'RemoteDesktop.dat',fmCreate);
+        F.Position := F.Size;
+        TestName := Copy(StrPas(LP^.Name),1,Length(StrPas(LP^.Name))-4);
+        If Length(TestName)>30 then
+          TestName := Copy(TestName,0,29)+'...';
+        case LP^.TestType of
+         0 :  TestName :=  TestName + ' (Зачетный)';
+         1 :  TestName :=  TestName + ' (Проверочный)';
+         2 :  TestName :=  TestName + ' (Обучение)';
+        end;
+        len := Length(TestName);
+        F.Write(len,4);
+        buffer := StrAlloc(len+1);
+        buffer := StrPCopy(buffer, TestName);
+        F.Write(buffer^,Length(TestName));
+        StrDispose(buffer);
+        len := Length(StrPas(LP^.Path));
+        F.Write(len,4);
+        F.Write(LP^.Path^,len);
+        F.Free;
+        ListItem := mf.ListView1.Items.Add;
+        ListItem.ImageIndex := 4;
+        ListItem.Caption := TestName;
+        ListItem.Subitems.Add(StrPas(LP^.Path));
+     except
+        ShowMessage('Ошибка ввода/вывода.');
+     end;
+end;
+
+procedure TLoadTestForm.BitBtn1Click(Sender: TObject);
+begin
+ if tv.Selected <> nil then
+  if (tv.Selected.ImageIndex <> 0) and (tv.Selected.ImageIndex <> 2) then
+    ModalResult := mrOk;
+end;
+
+procedure TLoadTestForm.tvKeyUp(Sender: TObject; var Key: Word;
+  Shift: TShiftState);
+begin
+if Key=VK_Return then
+ if BitBtn1.Enabled then BitBtn1Click(Sender);
+end;
+
+procedure TLoadTestForm.WriteParams;
+var
+ Registry : TMyStream;
+begin
+ try
+  Registry := TMyStream.Create(ExtractFilePath(paramstr(0))+'tpos.cfg',fmCreate);
+  Registry.WriteInteger(tv.Width);
+  if WindowState = wsNormal then
+   Registry.WriteInteger(0)
+  else
+  if WindowState = wsMaximized then
+   Registry.WriteInteger(1);
+  Registry.Free;
+ except
+ end;
+end;
+
+procedure TLoadTestForm.ReadParams;
+var
+ Registry : TMyStream;
+begin
+ try
+  Registry := TMyStream.Create(ExtractFilePath(paramstr(0))+'tpos.cfg',fmOpenRead);
+  tv.Width := Registry.ReadInteger;
+  if Registry.ReadInteger = 1 then
+  begin
+   Left := 0;
+   Top := 0;
+   WindowState := wsMaximized;
+  end
+  else
+  begin
+   WindowState := wsNormal;
+  end;
+  Registry.Free;
+  Repaint;
+ except
+   WindowState := wsNormal;
+   Repaint;
+ end;
+end;
+
+procedure TLoadTestForm.TreeSaveToFile(fn : string);
+var
+ i : integer;
+ F : TMyStream;
+begin
+ try
+  F := TMystream.Create(fn,fmCreate);
+  for i :=0 to tv.Items.Count-1 do
+  begin
+   F.WriteInteger(tv.Items[i].AbsoluteIndex);
+   if tv.Items[i].Expanded then
+    F.WriteByte(1)
+   else
+    F.WriteByte(0);
+  end;
+  F.Free;
+ except
+ end;
+end;
+
+procedure TLoadTestForm.TreeLoadFromFile(fn : string);
+var
+ z, i : integer;
+ F : TMyStream;
+ b : byte;
+begin
+ try
+  F := TMystream.Create(fn,fmOpenRead);
+  while F.Position < F.Size do
+  begin
+   z := F.ReadInteger;
+   b := F.ReadByte;
+   for i :=0 to tv.Items.Count-1 do
+    if tv.Items[i].AbsoluteIndex = z then
+    begin
+     if b = 1 then
+      tv.Items[i].Expand(False)
+     else
+      tv.Items[i].Collapse(False);
+     break;
+    end;
+  end;
+  F.Free;
+ except
+ end;
+end;
+
+procedure TLoadTestForm.tvCollapsed(Sender: TObject; Node: TTreeNode);
+begin
+ if savetree then TreeSaveToFile(ExtractFilePath(paramstr(0))+'tree.cfg');
+end;
+
+procedure TLoadTestForm.tvExpanded(Sender: TObject; Node: TTreeNode);
+begin
+ if savetree then TreeSaveToFile(ExtractFilePath(paramstr(0))+'tree.cfg');
+end;
+
+procedure TLoadTestForm.tvCollapsing(Sender: TObject; Node: TTreeNode;
+  var AllowCollapse: Boolean);
+begin
+ Node.ImageIndex := 2;
+ Node.SelectedIndex := 2;
+end;
+
+procedure TLoadTestForm.tvExpanding(Sender: TObject; Node: TTreeNode;
+  var AllowExpansion: Boolean);
+begin
+ Node.ImageIndex := 0;
+ Node.SelectedIndex := 0;
+end;
+
+procedure TLoadTestForm.ToolButton1Click(Sender: TObject);
+begin
+ savetree := false;
+ tv.FullCollapse;
+ savetree := true;
+ TreeSaveToFile(ExtractFilePath(paramstr(0))+'tree.cfg');
+end;
+
+procedure TLoadTestForm.ToolButton3Click(Sender: TObject);
+begin
+ savetree := false;
+ tv.FullExpand;
+ savetree := true;
+ TreeSaveToFile(ExtractFilePath(paramstr(0))+'tree.cfg');
+end;
+
+procedure TLoadTestForm.FormActivate(Sender: TObject);
+begin
+ Maximize := true;
+end;
+
+end.

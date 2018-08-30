@@ -1,0 +1,79 @@
+unit inidata;
+
+interface
+
+uses Windows, ComTypes, ComProc, Classes, SysUtils, DbTables, Dialogs, Graphics, Registry, cpuID;
+
+type
+
+  TAppOptions = class
+    AliasName: String;
+    Fam, Nam, Otch, Work, UserName: String;
+    Password: String;
+    DirName: String;
+    RegData: String;
+    Serial: String;
+    FTextAttr: TFont;
+    DefMarks: Integer;
+    DefMinutes: Integer;
+    SaveChanges: Boolean;
+    RegDone: Boolean;
+    FirstStart: Boolean;
+    constructor Create;
+    destructor Destroy; override;
+    function LoadFromReg: Boolean;
+    function SaveToReg : Boolean;
+  end;
+
+var
+  AppOptions: TAppOptions;
+
+implementation
+
+constructor TAppOptions.Create;
+begin
+  inherited Create;
+  FTextAttr := TFont.Create;
+  DefMarks := 20;
+  DefMinutes := 1;
+  Serial:=IntToStr(23094); // серийный номер пограммы
+end;
+
+destructor TAppOptions.Destroy;
+begin
+  FTextAttr.Free;
+  inherited Destroy;
+end;
+
+function TAppOptions.LoadFromReg: Boolean;
+var
+  Reg: TMyStream;
+begin
+ try
+      Reg:=TMyStream.Create(ExtractFilePath(paramstr(0))+'regdata.cfg',fmOpenRead);
+      RegData := Reg.ReadString;
+      Reg.Free;
+      FirstStart := False;
+      Result := True;
+  except
+      FirstStart := True;
+      Result := False;
+  end;
+end;
+
+function TAppOptions.SaveToReg: Boolean;
+var
+  Reg: TMyStream;
+begin
+ try
+      Reg:=TMyStream.Create(ExtractFilePath(paramstr(0))+'regdata.cfg',fmCreate);
+      Reg.WriteString(RegData);
+      Reg.Free;
+      Result := True;
+  except
+      MessageDlg('Ошибка записи параметров...', mtCustom, [mbOK], 0);
+      Result := False;
+  end;
+end;
+
+end.

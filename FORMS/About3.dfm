@@ -1,0 +1,46 @@
+object About3Form: TAbout3Form
+  Left = 219
+  Top = 135
+  Width = 803
+  Height = 566
+  Caption = 'О партнерах'
+  Color = clBtnFace
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -11
+  Font.Name = 'MS Sans Serif'
+  Font.Style = []
+  OldCreateOrder = False
+  Position = poMainFormCenter
+  PixelsPerInch = 96
+  TextHeight = 13
+  object Panel1: TPanel
+    Left = 0
+    Top = 492
+    Width = 795
+    Height = 40
+    Align = alBottom
+    BevelOuter = bvLowered
+    TabOrder = 0
+    object Button1: TButton
+      Left = 8
+      Top = 8
+      Width = 89
+      Height = 25
+      Cancel = True
+      Caption = 'Отмена'
+      Default = True
+      ModalResult = 2
+      TabOrder = 0
+    end
+  end
+  object RO: TRxRichEdit
+    Left = 0
+    Top = 0
+    Width = 795
+    Height = 492
+    Align = alClient
+    ReadOnly = True
+    TabOrder = 1
+  end
+end

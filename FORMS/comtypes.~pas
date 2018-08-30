@@ -1,0 +1,313 @@
+unit comtypes;
+
+interface
+
+uses Classes, dbtables, db, Graphics, Contnrs, Math;
+
+const
+
+  K = 'Zk.,k.nt,z?Cdtnjymrf';
+
+type
+
+  TPassString = String[Length(K) + 2]; // тип cтроки пароля
+//------------------------------------------------------------------------------
+  TIntClass = class
+    Int: Integer;
+  end;
+//------------------------------------------------------------------------------
+  TAvailableFolder = class
+  private
+    function GetAWrite: Boolean;
+    procedure SetAWrite(B: Boolean);
+    function GetADelete: Boolean;
+    procedure SetADelete(B: Boolean);
+  public
+    FAccessData: Byte;
+    FFolderID: Integer;
+    property AccessWrite: Boolean
+      read GetAWrite write SetAWrite;
+    property AccessDelete: Boolean
+      read GetADelete write SetADelete;
+  end;
+
+  TFolder = class
+    FId: Integer;
+    FType, FObject, FAccess: Byte;
+  end;
+
+  TUser = class
+  private
+    function GetBit(N: Byte): Boolean;
+    procedure SetBit(N: Byte; B: Boolean);
+{    function GetUWS: Boolean;
+    procedure SetUWS(B: Boolean);
+    function GetER: Boolean;
+    procedure SetER(B: Boolean);
+    function GetEST: Boolean;
+    procedure SetEST(B: Boolean);
+    function GetSFR: Boolean;
+    procedure SetSFR(B: Boolean);
+    function GetSSR: Boolean;
+    procedure SetSSR(B: Boolean);
+    function GetVR: Boolean;
+    procedure SetVR(B: Boolean);
+    function GetTT: Boolean;
+    procedure SetTT(B: Boolean);}
+  public
+    FId: Integer;
+    FSurname, FName, FPatronymic: String;
+    FLogin: String;
+    FPassword: String;
+    FRights: Integer;
+    FFoldersList: TObjectList;
+    property Right[N: Byte]: Boolean
+      read GetBit write SetBit;
+    constructor Create;
+    destructor Destroy; override;
+    procedure GetUser(PID: Integer; PSurname, PName, PPatronymic: String;
+      PQuery: TQuery);
+    procedure LoadFromStream1(F: TStream);
+    procedure SaveToStream1(var F: TMemoryStream);
+    function IndexOfFolder(id: Integer; PType, PObject: Byte): Integer;
+  end;
+
+  TMyStream = class(TFileStream)
+    procedure WriteByte(B: Byte);
+    procedure WriteInteger(I: Integer);
+    procedure WriteString(S: String);
+    procedure WriteFloat(F: Real);
+    procedure WriteFont(F: TFont);
+    procedure ReadFont(var F: TFont);
+    function ReadByte: Byte;
+    function ReadInteger: Integer;
+    function ReadString: String;
+    function ReadFloat: Real;
+  end;
+
+implementation
+
+uses comproc;
+
+function TAvailableFolder.GetAWrite: Boolean;
+begin
+  Result := (FAccessData and 1) = 1;
+end;
+
+procedure TAvailableFolder.SetAWrite(B: Boolean);
+begin
+  FAccessData := FAccessData or Ord(B);
+end;
+
+function TAvailableFolder.GetADelete: Boolean;
+begin
+  Result := (FAccessData and 2) = 2;
+end;
+
+procedure TAvailableFolder.SetADelete(B: Boolean);
+begin
+  FAccessData := FAccessData or (Ord(B) shl 1);
+end;
+
+function TUser.GetBit(N: Byte): Boolean;
+begin
+  Result := (FRights and Round(Ldexp(1, N))) = Round(Ldexp(1, N));
+end;
+
+procedure TUser.SetBit(N: Byte; B: Boolean);
+begin
+  if B then
+    FRights := FRights or Round(Ldexp(1, N)) else
+    FRights := FRights and (not Round(Ldexp(1, N)));
+end;
+
+constructor TUser.Create;
+begin
+  inherited Create;
+  FId := 0;
+  FRights := 0;
+  FFoldersList := TObjectList.Create;
+end;
+
+destructor TUser.Destroy;
+begin
+  FFoldersList.Free;
+  inherited Destroy;
+end;
+
+procedure TUser.GetUser(PID: Integer; PSurname, PName, PPatronymic: String;
+  PQuery: TQuery);
+var
+  Mem: TMyStream;
+  FolCount, I: Integer;
+begin
+  with PQuery do begin
+    SQL.Clear;
+    SQL.Add('select * from logins where id = :id');
+    Params[0].AsInteger := PID;
+    Open;
+    FID := PID;
+    FSurname := PSurname;
+    FName := PName;
+    FPatronymic := PPatronymic;
+    FPassword := DeCrypt(FieldByName('password').AsString);
+    FRights := FieldByName('access_rights').AsInteger;
+  end;
+end;
+
+procedure TUser.LoadFromStream1(F: TStream);
+var
+  Mem: TMyStream;
+  I, FolCount: Integer;
+begin
+  if F.Size = 0 then Exit;
+    Mem := TMyStream.Create;
+    F.Position := 0;
+    Mem.CopyFrom(F, F.Size);
+    Mem.Position := 0;
+    FolCount := Mem.ReadInteger;
+    FFoldersList.Clear;
+    for I := 1 to FolCount do begin
+      FFoldersList.Add(TAvailableFolder.Create);
+      TFolder(FFoldersList.Items[FFoldersList.Count - 1]).FID := Mem.ReadInteger;
+      TFolder(FFoldersList.Items[FFoldersList.Count - 1]).FType := Mem.ReadByte;
+      TFolder(FFoldersList.Items[FFoldersList.Count - 1]).FAccess := Mem.ReadByte;
+      TFolder(FFoldersList.Items[FFoldersList.Count - 1]).FObject := Mem.ReadByte;
+    end;
+    Mem.Free;
+end;
+
+procedure TUser.SaveToStream1(var F: TMemoryStream);
+var
+  I: Integer;
+  Mem: TMyStream;
+begin
+    Mem := TMyStream.Create;
+    Mem.WriteInteger(FFoldersList.Count);
+    for I := 0 to FFoldersList.Count - 1 do begin
+      Mem.WriteInteger(TFolder(FFoldersList.Items[I]).Fid);
+      Mem.WriteByte(TFolder(FFoldersList.Items[I]).FType);
+      Mem.WriteByte(TFolder(FFoldersList.Items[I]).FAccess);
+      Mem.WriteByte(TFolder(FFoldersList.Items[I]).FObject);
+    end;
+    Mem.Position := 0;
+    F.Position := 0;
+    F.CopyFrom(Mem, Mem.Size);
+    Mem.Free;
+end;
+
+function TUser.IndexOfFolder(id: Integer; PType, PObject: Byte): Integer;
+var
+  I: Integer;
+begin
+  for I := 0 to FFoldersList.Count - 1 do
+    if (TFolder(FFoldersList.Items[I]).Fid = id) and
+      (TFolder(FFoldersList.Items[I]).FType = PType) and
+      ((TFolder(FFoldersList.Items[I]).FObject = PObject) or (PObject = 3))
+      then begin
+      Result := I;
+      Exit;
+    end;
+  Result := -1;
+end;
+
+procedure TMyStream.WriteByte(B: Byte);
+begin
+  Write(B, SizeOf(B));
+end;
+
+procedure TMyStream.WriteInteger(I: Integer);
+begin
+  Write(I, SizeOf(I));
+end;
+
+procedure TMyStream.WriteString(S: String);
+var
+  L : Integer;
+begin
+  L := Length(S);
+  Write(L, SizeOf(L));
+  Write(Pointer(S)^, L);
+end;
+
+procedure TMyStream.WriteFloat(F: Real);
+begin
+  Write(F, SizeOf(F));
+end;
+
+procedure TMyStream.WriteFont(F: TFont);
+var
+  I: Integer;
+  S: String;
+  P: TFontPitch;
+  St: TFontStyles;
+begin
+  I := F.Charset;
+  Write(I, SizeOf(Byte));
+  Write(F.Color, SizeOf(F.Color));
+  I := F.Size;
+  Write(I, SizeOf(F.Size));
+  WriteString(F.Name);
+  P := F.Pitch;
+  Write(P, SizeOf(F.Pitch));
+  St := F.Style;
+  Write(St, SizeOf(F.Style));
+end;
+
+function TMyStream.ReadByte: Byte;
+var
+  Temp: Byte;
+begin
+  Read(Temp, SizeOf(Temp));
+  Result := Temp;
+end;
+
+function TMyStream.ReadInteger: Integer;
+var
+  Temp: Integer;
+begin
+  Read(Temp, SizeOf(Temp));
+  Result := Temp;
+end;
+
+function TMyStream.ReadString: String;
+var
+  Temp: String;
+  L: Integer;
+begin
+  Read(L, SizeOf(L));
+  SetString(Temp, nil, L);
+  Read(Pointer(Temp)^, L);
+  Result := Temp;
+end;
+
+function TMyStream.ReadFloat: Real;
+var
+  Temp: Real;
+begin
+  Read(Temp, SizeOf(Temp));
+  Result := Temp;
+end;
+
+procedure TMyStream.ReadFont(var F: TFont);
+var
+  I: Integer;
+  C: TColor;
+  S: String;
+  P: TFontPitch;
+  St: TFontStyles;
+begin
+  Read(I, SizeOf(Byte));
+  F.Charset := I;
+  Read(C, SizeOf(F.Color));
+  F.Color := C;
+  Read(I, SizeOf(F.Size));
+  F.Size := I;
+  S := ReadString;
+  F.Name := S;
+  Read(P, SizeOf(F.Pitch));
+  F.Pitch := P;
+  Read(St, SizeOf(F.Style));
+  F.Style := St;
+end;
+end.
