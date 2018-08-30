@@ -1,3 +1,3 @@
 # Test-Viewer
 
-The Test Viewer. This is the program for person's test. Project closed in 2012.
+The Test Viewer. This is the program for viewing tests. Project closed in 2012.
